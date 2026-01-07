@@ -8,7 +8,8 @@ A stateful, conversational AI chatbot built using **LangGraph** for orchestratio
 
 - **⚡ Powered by Groq:** Utilizes the Llama 3 model via Groq for lightning-fast responses.
 - **🧠 Persistent Memory:** Uses LangGraph's state management to remember context across multiple turns of conversation.
-- **🕸️ LangGraph Architecture:** built on a graph-based workflow for robust control flow.
+- **💾 Database Integration:** Uses **SQLite** to automatically save and retrieve conversation history and session states.
+- **🕸️ LangGraph Architecture:** Built on a graph-based workflow for robust control flow.
 - **🎨 Streamlit UI:** A clean, responsive chat interface.
 - **🛠️ Modular Design:** Separated frontend (`langgraph_frontend.py`) and backend (`langgraph_backend.py`) logic.
 
@@ -19,6 +20,7 @@ A stateful, conversational AI chatbot built using **LangGraph** for orchestratio
 - **LangChain** (LLM Framework)
 - **Groq API** (Inference Engine)
 - **Streamlit** (Frontend)
+- **SQLite** (Database)
 
 ## 🚀 Installation & Local Setup
 
