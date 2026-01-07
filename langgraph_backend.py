@@ -14,7 +14,6 @@ DB_NAME = "chatbot.db"
 # check_same_thread=False is crucial for Streamlit's concurrency model
 conn = sqlite3.connect(database=DB_NAME, check_same_thread=False)
 checkpointer = SqliteSaver(conn=conn)
-checkpointer = SqliteSaver.from_conn_string("/tmp/checkpoints.db")
 
 # --- 2. Define State & Model ---
 class AgentState(TypedDict):
