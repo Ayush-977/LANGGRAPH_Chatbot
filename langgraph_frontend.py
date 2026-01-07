@@ -43,6 +43,7 @@ if 'message_history' not in st.session_state:
 # --- 3. Sidebar (Persistent Menu Logic) ---
 
 with st.sidebar:
+    st.set_page_config(layout="wide")
     st.title("LangGraph Chat")
     
     # 1. New Chat Button
