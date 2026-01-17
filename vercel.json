@@ -3,8 +3,7 @@
   "functions": {
     "api/index.py": {
       "runtime": "@vercel/python",
-      "maxDuration": 30,
-      "excludeFiles": "{.venv/**,venv/**,tests/**,data/**,*.pkl}"
+      "maxDuration": 30
     }
   },
   "routes": [
