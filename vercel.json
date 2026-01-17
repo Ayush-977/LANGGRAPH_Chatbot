@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "lANGGRAPH_CHATBOT/langgraph_frontend.py",
+      "src": "api/langgraph_frontend.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "lANGGRAPH_CHATBOT/langgraph_frontend.py"
+      "dest": "api/langgraph_frontend.py"
     }
   ]
 }
