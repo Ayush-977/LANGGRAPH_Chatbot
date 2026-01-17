@@ -1,7 +1,7 @@
 {
   "version": 2,
   "functions": {
-    "api/index.py": {
+    "api/langgraph_frontend.py": {
       "runtime": "@vercel/python",
       "maxDuration": 30
     }
