@@ -1,13 +1,9 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python"
-    }
-  ],
   "functions": {
-    "api/*.py": {
+    "api/index.py": {
+      "runtime": "@vercel/python",
+      "maxDuration": 30,
       "excludeFiles": "{.venv/**,venv/**,tests/**,data/**,*.pkl}"
     }
   },
