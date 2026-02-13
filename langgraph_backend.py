@@ -67,7 +67,7 @@ def chat(state: AgentState) -> AgentState:
                 "without calling any tool. "
                 "Think step-by-step and choose the simplest action."
             
-), *state["messages"]])
+), state["messages"]])
 ]}
 
 tool_node = ToolNode(tools)
