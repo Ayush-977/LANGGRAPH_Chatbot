@@ -45,7 +45,7 @@ def calculator(a:float,b:float,operation:str) -> dict:
 
 # --- 1. Setup Database ---
 DB_NAME = "chatbot.db"
-# check_same_thread=False is crucial for Streamlit's concurrency model
+
 conn = sqlite3.connect(database=DB_NAME, check_same_thread=False)
 checkpointer = SqliteSaver(conn=conn)
 
@@ -69,6 +69,7 @@ graph.add_node("llm", chat)
 graph.add_node("tools",tool_node)
 graph.add_edge(START, "llm")
 graph.add_conditional_edges("llm",tools_condition)
+graph.add_edge("llm", END)
 graph.add_edge("tools","llm")
 
 chatbot = graph.compile(checkpointer=checkpointer)
