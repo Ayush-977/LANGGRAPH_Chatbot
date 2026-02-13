@@ -187,14 +187,12 @@ if user_input:
         status_box = {"ref": None} 
 
         def unified_stream():
-            tool_active = False
             for message_chunk, metadata in chatbot.stream(
                 {"messages": [HumanMessage(content=user_input)]},
                 config=CONFIG,
                 stream_mode="messages",
             ):
                 if isinstance(message_chunk, ToolMessage):
-                    tool_active = True
                     tool_name = getattr(message_chunk, "name", "tool")
                     if status_box["ref"] is None:
                         status_box["ref"] = st.status(f"🔧 Using `{tool_name}` …", expanded=True)
@@ -204,24 +202,9 @@ if user_input:
                             state="running",
                             expanded=True,
                         )
-                    continue
 
-                if isinstance(message_chunk, AIMessage):
-                    if tool_active and status_box["ref"] is not None:
-                        status_box["ref"].update(label="✅ Tool finished", state="complete", expanded=False)
-                        tool_active = False
-                    if isinstance(message_chunk.content, str):
-                        if message_chunk.content:
-                            yield message_chunk.content
-                    else:
-                        try:
-                            for chunk in message_chunk.content:
-                                if isinstance(chunk, str) and chunk:
-                                    yield chunk
-                                elif hasattr(chunk, "content") and chunk.content:
-                                    yield chunk.content
-                        except TypeError:
-                            pass
+                if isinstance(message_chunk, AIMessage) and message_chunk.content:
+                    yield message_chunk.content
 
         assistant_text = st.write_stream(unified_stream())
 
