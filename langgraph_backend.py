@@ -4,7 +4,7 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langchain_groq import ChatGroq
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import BaseMessage,SystemMessage,HumanMessage
 from langchain_community.tools import DuckDuckGoSearchRun
 from langgraph.prebuilt import ToolNode,tools_condition
 from langchain_core.tools import tool
@@ -59,7 +59,8 @@ tools = [calculator,search_tool]
 llm_tools = llm.bind_tools(tools)
 
 def chat(state: AgentState) -> AgentState:
-    return {"messages": [llm_tools.invoke(state["messages"])]}
+    return {"messages": [llm_tools.invoke([SystemMessage(content="You are a helpful assistant. Use tools only when necessary."), *state["messages"]])
+]}
 
 tool_node = ToolNode(tools)
 
