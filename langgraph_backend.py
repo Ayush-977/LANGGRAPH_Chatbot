@@ -28,19 +28,21 @@ llm = ChatGroq(model="llama-3.1-8b-instant")
 
 
 def chat(state: AgentState) -> AgentState:
-    messages = [SystemMessage(content=
-"You are a helpful assistant. "
-                "Use tools only when the user explicitly asks for information "
-                "that requires calling a tool. "
-                "For greetings, casual chat, or explanations, respond normally "
-                "without calling any tool. "
-                "Think step-by-step and choose the simplest action."
-            
-) , state["messages"]]
+    system_msg = SystemMessage(
+        content=(
+            "You are a helpful assistant. "
+            "Use tools only when the user explicitly asks for information "
+            "that requires calling a tool. "
+            "For greetings, casual chat, or explanations, respond normally "
+            "without calling any tool. "
+            "Think step-by-step and choose the simplest action."
+        )
+    )
+    messages = [system_msg] + state["messages"]
     
     response = llm.invoke(messages)
-
     return {"messages": [response]}
+
     
 
 # --- 3. Build Graph ---
