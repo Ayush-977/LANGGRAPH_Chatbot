@@ -6,42 +6,97 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langchain_groq import ChatGroq
 from langchain_core.messages import BaseMessage,SystemMessage,HumanMessage
 from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_community.utilities import WikipediaAPIWrapper
 from langgraph.prebuilt import ToolNode,tools_condition
 from langchain_core.tools import tool
+from datetime import datetime
 from dotenv import load_dotenv
 import requests
-
+wiki = WikipediaAPIWrapper()
 load_dotenv()
 
 # --- Tools ---
 search_tool = DuckDuckGoSearchRun(region="us-en")
 
 @tool
-def calculator(a:float,b:float,operation:str) -> dict:
-  """
-  Perform a basic arithmetic operation on two numbers.
-  Supported operations: add,sub,mul,div
-  """
-  try:
-    if operation == "add":
-      result = a + b
-    elif operation == "sub":
-      result = a - b
-    elif operation == "mul":
-      result = a * b
-    elif operation == "div":
-      if b == 0:
-        return {"error": "Division by zero is not possible"}
-      result = a / b
-    else:
-      return {"error": f"Unsupported operation '{operation}'"}
+
+@tool
+def eval_math(expression: str) -> dict:
+    "Evaluate a math expression safely."
+    import math
+    try:
+        result = eval(expression, {"__builtins__": {}}, math.__dict__)
+        return {"expression": expression, "result": result}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@tool
+def http_get(url: str) -> dict:
+    "Send a GET request and return JSON or text."
+    try:
+        r = requests.get(url, timeout=10)
+        try:
+            return r.json()
+        except:
+            return {"text": r.text}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+
+@tool
+def wikipedia_search(query: str):
+    "Search Wikipedia for a topic."
+    return wiki.run(query)
+
+
+@tool
+def current_time(_) -> str:
+    "Returns the current server time."
+    return datetime.now().isoformat()
+
+
+@tool
+def extract_keywords(text: str) -> list:
+    "Extract simple keywords."
+    import re
+    words = re.findall(r'\b\w+\b', text.lower())
+    common = [w for w in words if len(w) > 4]
+    return list(set(common))
+
+
+@tool
+def python_eval(code: str) -> dict:
+    "Execute pure Python (no imports)."
+    safe_globals = {}
+    try:
+        exec(code, safe_globals)
+        return safe_globals
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@tool
+def read_file(path: str) -> str:
+    "Read a text file."
+    try:
+        return open(path, "r").read()
+    except Exception as e:
+        return str(e)
     
-    return {"a": a , "b": b , "operation":operation, "result":result}
-  
-  except Exception as e:
-    return {"error": str(e)}
-  
-tools = [calculator,search_tool]
+@tool
+def write_file(path: str, content: str) -> str:
+    "Write content to a file."
+    try:
+        open(path, "w").write(content)
+        return "File written successfully."
+    except Exception as e:
+        return str(e)
+
+
+
+tools = [eval_math,search_tool,http_get,wikipedia_search,current_time,extract_keywords,python_eval,read_file,write_file]
 
 # --- 1. Setup Database ---
 DB_NAME = "chatbot.db"
