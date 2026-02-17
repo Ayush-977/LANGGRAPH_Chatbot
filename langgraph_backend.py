@@ -85,13 +85,15 @@ def chat(state: AgentState) -> AgentState:
     response = llm.invoke(messages)
     return {"messages": [response]}
 
-    
+tool_node = ToolNode(tools)    
 
 # --- 3. Build Graph ---
 graph = StateGraph(AgentState)
 graph.add_node("llm", chat)
+graph.add_node("tools",tool_node)
 graph.add_edge(START, "llm")
-graph.add_edge("llm",END)
+graph.add_edge("llm",tools_condition)
+graph.add_edge("tools","llm")
 
 chatbot = graph.compile(checkpointer=checkpointer)
 
