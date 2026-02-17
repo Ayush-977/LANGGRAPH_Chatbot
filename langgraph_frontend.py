@@ -1,5 +1,6 @@
 import uuid
 import streamlit as st
+import logging
 
 from langgraph_backend import chatbot, clear_database
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage, AIMessage
@@ -7,24 +8,27 @@ from langchain_groq import ChatGroq
 
 from session_db import init_db, save_session_title, get_all_sessions, delete_all_sessions
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # ----------------
 # Initialization
 # ----------------
 init_db()
 
-
 st.set_page_config(layout="wide")
-
 
 # ---------------------
 # 1) Helper Functions
 # ---------------------
 
-@st.cache_resource
+# Fallback singleton to avoid pickling issues with cache
+_title_llm = None
 def get_title_llm():
-    """Cache the LLM client used for generating titles."""
-    return ChatGroq(model="llama-3.1-8b-instant")
-
+    global _title_llm
+    if _title_llm is None:
+        _title_llm = ChatGroq(model="llama-3.1-8b-instant")
+    return _title_llm
 
 def generate_title(first_message_content: str) -> str:
     """Generate a very short, safe title (≤ 4 words, ≤ 30 chars) for the chat."""
@@ -35,7 +39,7 @@ def generate_title(first_message_content: str) -> str:
             HumanMessage(content=first_message_content),
         ]
         response = llm.invoke(messages)
-        title = (response.content or "").strip()
+        title = str(getattr(response, "content", "") or "").strip()
         title = " ".join(title.split())
 
         words = title.split()
@@ -46,18 +50,21 @@ def generate_title(first_message_content: str) -> str:
             title = title[:27] + "…"
 
         return title or "New Conversation"
-    except Exception:
+    except Exception as e:
+        logger.exception("Title generation failed: %s", e)
         return "New Conversation"
 
-
 def load_convo(thread_id: str):
-    """
-    Load message history from LangGraph state and return a list of dicts
-    formatted for Streamlit chat UI. Only include Human/AI messages.
-    """
+    """Load message history from LangGraph state and return UI-ready list."""
     config = {"configurable": {"thread_id": thread_id}}
-    state = chatbot.get_state(config)
-    messages = state.values.get("messages", [])
+    try:
+        state = chatbot.get_state(config) or {}
+    except Exception as e:
+        logger.warning("get_state failed for %s: %s", thread_id, e)
+        return []
+
+    values = getattr(state, "values", {}) or {}
+    messages = values.get("messages", []) or []
 
     ui_msgs = []
     for msg in messages:
@@ -66,7 +73,6 @@ def load_convo(thread_id: str):
         elif isinstance(msg, AIMessage):
             ui_msgs.append({"role": "assistant", "content": msg.content})
     return ui_msgs
-
 
 # ---------------------------------
 # 2) Session State Initialization
@@ -77,6 +83,8 @@ if "thread_id" not in st.session_state:
 if "message_history" not in st.session_state:
     st.session_state["message_history"] = []
 
+# Safe default to avoid NameError if sidebar fails
+thread_titles = {st.session_state["thread_id"]: "New Chat"}
 
 # -----------
 # 3) Sidebar 
@@ -84,10 +92,12 @@ if "message_history" not in st.session_state:
 with st.sidebar:
     st.title("LangGraph Chat")
 
-    # New Chat Button
     if st.button("➕ New Chat", use_container_width=True):
         new_id = str(uuid.uuid4())
-        save_session_title(new_id, "New Chat")
+        try:
+            save_session_title(new_id, "New Chat")
+        except Exception as e:
+            logger.exception("Failed to save new session title: %s", e)
         st.session_state["thread_id"] = new_id
         st.session_state["message_history"] = []
         st.rerun()
@@ -95,11 +105,13 @@ with st.sidebar:
     st.markdown("---")
     st.header("History")
 
-    # Load Sessions from DB 
-    db_sessions = get_all_sessions()
-    db_sessions = db_sessions[::-1]
+    try:
+        db_sessions = get_all_sessions()
+    except Exception as e:
+        logger.exception("get_all_sessions failed: %s", e)
+        db_sessions = []
 
-    # Extract IDs and Titles
+    db_sessions = db_sessions[::-1]
     thread_ids = [s[0] for s in db_sessions]
     thread_titles = {s[0]: s[1] for s in db_sessions}
 
@@ -112,7 +124,6 @@ with st.sidebar:
     except ValueError:
         curr_idx = 0
 
-    # Selection Menu
     selected_id = st.radio(
         "Select Chat",
         options=thread_ids,
@@ -121,29 +132,17 @@ with st.sidebar:
         label_visibility="collapsed",
     )
 
-    # Handle Switching Chats
     if selected_id != st.session_state["thread_id"]:
         st.session_state["thread_id"] = selected_id
         st.session_state["message_history"] = load_convo(selected_id)
         st.rerun()
 
-    # --- Style Injection ---
     st.markdown(
         """
         <style>
-        div.stButton > button:first-child {
-            width: 100%;
-        }
-        /* Heuristic styling for the last button (Clear History) */
-        div.stButton > button:last-child {
-            background-color: #ff4b4b;
-            color: white;
-            border: none;
-        }
-        div.stButton > button:last-child:hover {
-            background-color: #ff0000;
-            color: white;
-        }
+        div.stButton > button:first-child { width: 100%; }
+        div.stButton > button:last-child { background-color: #ff4b4b; color: white; border: none; }
+        div.stButton > button:last-child:hover { background-color: #ff0000; color: white; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -151,19 +150,22 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # 3.5 Clear History Button
     if st.button("⚠️ Clear History"):
-        clear_database()
-        delete_all_sessions()
+        try:
+            clear_database()
+        except Exception as e:
+            logger.exception("clear_database failed: %s", e)
+        try:
+            delete_all_sessions()
+        except Exception as e:
+            logger.exception("delete_all_sessions failed: %s", e)
         st.session_state.clear()
         st.rerun()
-
 
 # -------------------
 # 4) Main Chat Area
 # -------------------
 
-# Display Chat History
 for message in st.session_state["message_history"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -171,20 +173,25 @@ for message in st.session_state["message_history"]:
 user_input = st.chat_input("Type here...")
 
 if user_input:
-    # -- Title generation --
     current_title = thread_titles.get(st.session_state["thread_id"], "New Chat")
     if len(st.session_state["message_history"]) == 0 or current_title == "New Chat":
         new_name = generate_title(user_input)
-        save_session_title(st.session_state["thread_id"], new_name)
+        try:
+            save_session_title(st.session_state["thread_id"], new_name)
+        except Exception as e:
+            logger.exception("Failed to save session title: %s", e)
 
-    # -- Add User Message to State and UI
     st.session_state["message_history"].append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
     with st.chat_message("assistant"):
         CONFIG = {"configurable": {"thread_id": st.session_state["thread_id"]}}
-        status_box = {"ref": None} 
+        status_placeholder = st.empty()
+
+        def set_status(label, state="running"):
+            icon = "🔧" if state == "running" else "✅"
+            status_placeholder.info(f"{icon} {label}")
 
         def unified_stream():
             for message_chunk, metadata in chatbot.stream(
@@ -193,23 +200,14 @@ if user_input:
                 stream_mode="messages",
             ):
                 if isinstance(message_chunk, ToolMessage):
-                    tool_name = getattr(message_chunk, "name", "tool")
-                    if status_box["ref"] is None:
-                        status_box["ref"] = st.status(f"🔧 Using `{tool_name}` …", expanded=True)
-                    else:
-                        status_box["ref"].update(
-                            label=f"🔧 Using `{tool_name}` …",
-                            state="running",
-                            expanded=True,
-                        )
-
-                if isinstance(message_chunk, AIMessage) and message_chunk.content:
-                    yield message_chunk.content
+                    tool_name = getattr(message_chunk, "name", None) or getattr(message_chunk, "tool_name", None) or "tool"
+                    set_status(f"Using `{tool_name}` …", state="running")
+                elif isinstance(message_chunk, AIMessage):
+                    if isinstance(message_chunk.content, str) and message_chunk.content:
+                        yield message_chunk.content
 
         ai_msg = st.write_stream(unified_stream())
-
-        if status_box["ref"] is not None:
-            status_box["ref"].update(label="✅ Tool finished", state="complete", expanded=False)
+        set_status("Tool finished", state="complete")
 
     st.session_state["message_history"].append({"role": "assistant", "content": ai_msg})
 
