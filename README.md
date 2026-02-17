@@ -132,6 +132,18 @@ LANGGRAPH_Chatbot/
 - Manages multiple conversations with radio menu
 - Shows tool execution status using `st.status()`
 
+### Registered Tools
+
+- eval_math
+- search_tool
+- http_get
+- wikipedia_search
+- current_time
+- extract_keywords
+- python_eval
+- read_file
+- write_file
+
 ### Database
 
 Stores:
@@ -155,9 +167,19 @@ SystemMessage(
 )
 ```
 
-### 🟢 Add Tools
+### 🧰 Adding New Tools
 
-Use LangChain `@tool` decorator and connect them to the graph.
+```python
+@tool
+def my_custom_tool(input: str):
+    return {"output": input.upper()}
+```
+
+Add to the list:
+
+```python
+tools = [ ..., my_custom_tool ]
+```
 
 ### 🔵 Modify Frontend UI
 
@@ -167,12 +189,14 @@ Located in `langgraph_frontend.py`.
 
 ## 🧪 Example Usage
 
-Ask anything — the chatbot:
+Ask the bot to:
 
-- Streams answers
-- Remembers context
-- Dynamically decides whether to use tools (if configured)
-- Stores your conversations for later
+- Search web
+- Do math
+- Fetch APIs
+- Run Python code
+- Extract keywords
+- Read/write files
 
 ---
 
