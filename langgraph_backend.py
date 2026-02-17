@@ -60,7 +60,8 @@ def chat(state: AgentState) -> AgentState:
     system_msg = SystemMessage(
         content=(
             "You are a helpful assistant. "
-            "Use tools only when the user explicitly asks for information "
+            "Use tools only when the user explicitly asks for information on anything."
+            "If you know the answer then only answer else use tools."
             "that requires calling a tool. "
             "For greetings, casual chat, or explanations, respond normally "
             "without calling any tool. "
