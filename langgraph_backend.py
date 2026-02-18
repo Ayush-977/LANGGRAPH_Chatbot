@@ -141,7 +141,7 @@ graph.add_conditional_edges(
     "llm",
     tools_condition, 
     {"tools": "tools",
-      "END": END}
+      "end": END}
 )
 
 graph.add_edge("tools","llm")
