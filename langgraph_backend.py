@@ -47,15 +47,6 @@ def current_time(_) -> str:
 
 
 @tool
-def extract_keywords(text: str) -> list:
-    "Extract simple keywords."
-    import re
-    words = re.findall(r'\b\w+\b', text.lower())
-    common = [w for w in words if len(w) > 4]
-    return list(set(common))
-
-
-@tool
 def python_eval(code: str) -> dict:
     "Execute pure Python (no imports)."
     safe_globals = {}
