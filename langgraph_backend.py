@@ -129,7 +129,16 @@ def chat(state: AgentState) -> AgentState:
     response = llm_tools.invoke(messages)
     return {"messages": [response]}
 
-tool_node = ToolNode(tools)    
+tool_node = ToolNode(tools)  
+
+
+def debug_tools_condition(state):
+    out = tools_condition(state)
+    # Normalize to a list for printing
+    labels = out if isinstance(out, (list, tuple)) else [out]
+    print("tools_condition returned labels:", labels)
+    return labels
+
 
 # --- 3. Build Graph ---
 graph = StateGraph(AgentState)
@@ -139,9 +148,14 @@ graph.add_edge(START, "llm")
 
 graph.add_conditional_edges(
     "llm",
-    tools_condition, 
-    {"tools": "tools",
-      "end": END},
+    debug_tools_condition,  
+    {
+        "tools": "tools",
+        "end": END,
+        "END": END,
+        "stop": END,
+        "__end__": END,
+    },
 )
 
 graph.add_edge("tools","llm")
