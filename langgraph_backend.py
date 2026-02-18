@@ -6,13 +6,11 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langchain_groq import ChatGroq
 from langchain_core.messages import BaseMessage,SystemMessage,HumanMessage
 from langchain_community.tools import DuckDuckGoSearchRun
-from langchain_community.utilities import WikipediaAPIWrapper
 from langgraph.prebuilt import ToolNode,tools_condition
 from langchain_core.tools import tool
 from datetime import datetime
 from dotenv import load_dotenv
 import requests
-wiki = WikipediaAPIWrapper()
 load_dotenv()
 
 # --- Tools ---
@@ -42,13 +40,6 @@ def http_get(url: str) -> dict:
             return {"text": r.text}
     except Exception as e:
         return {"error": str(e)}
-
-
-
-@tool
-def wikipedia_search(query: str):
-    "Search Wikipedia for a topic."
-    return wiki.run(query)
 
 
 @tool
@@ -96,7 +87,7 @@ def write_file(path: str, content: str) -> str:
 
 
 
-tools = [eval_math,search_tool,http_get,wikipedia_search,current_time,extract_keywords,python_eval,read_file,write_file]
+tools = [eval_math,search_tool,http_get,current_time,extract_keywords,python_eval,read_file,write_file]
 
 # --- 1. Setup Database ---
 DB_NAME = "chatbot.db"
