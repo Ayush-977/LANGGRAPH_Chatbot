@@ -3,7 +3,7 @@
 A stateful, high‑performance conversational AI chatbot powered by **LangGraph** for orchestration and **Groq** for ultra‑fast inference using Llama 3.  
 This project includes a fully persistent conversation memory, Streamlit UI, SQLite-based session storage, and modular backend architecture.
 
-🔗 **Live Demo:** _Add link when deployed_
+🔗 **Live Demo:** https://chat-graph.streamlit.app/
 
 ---
 
