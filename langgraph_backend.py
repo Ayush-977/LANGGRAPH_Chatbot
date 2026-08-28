@@ -88,7 +88,7 @@ checkpointer = SqliteSaver(conn=conn)
 class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
-llm = ChatGroq(model="llama-3.1-8b-instant")
+llm = ChatGroq(model="llama-3.3-70b-versatile")
 llm_tools = llm.bind_tools(tools)
 
 def chat(state: AgentState) -> AgentState:
