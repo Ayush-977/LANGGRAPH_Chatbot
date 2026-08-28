@@ -18,7 +18,7 @@ init_db()
 def generate_title(first_message_content: str) -> str:
     """Generate a very short title (≤ 4 words, ≤ 30 chars)."""
     try:
-        llm = ChatGroq(model="llama-3.1-8b-instant")
+        llm = ChatGroq(model="llama-3.1-70b-versatile")
         messages = [
             SystemMessage(content="Return ONLY a concise chat title, MAX 4 words, no quotes."),
             HumanMessage(content=first_message_content),
